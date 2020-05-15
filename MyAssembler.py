@@ -155,10 +155,10 @@ class Assembler:
 
         i = 0
         while i <= self.section:
-            for index, value in enumerate(self.Token_list[i].token_list):
-                if(value.operator == "EQU"):
-                    continue
-                print(str(hex(self.Token_list[i].get_token(index).locctr)) +" "+value.label +" "+value.operator +" "+ value.operand[0])
+            for index, value in enumerate(self.Token_list[i].symTab.symbol_list):
+                print(value)
+            print("\n")
+                #print(str(hex(self.Token_list[i].get_token(index).locctr)) +" "+value.label +" "+value.operator +" "+ value.operand[0])
             i += 1
 
     def make_symtab(self):
@@ -185,6 +185,32 @@ class Assembler:
             	self.locctr += (len(value) - 4) / 2
 
         self.Token_list[self.section].literalTab.tmp_list.clear()
+
+    def print_symbol_table(self, file_name):
+        f = open(file_name, 'w')
+        i = 0
+
+        while i <= self.section:
+            for index, value in enumerate(self.Token_list[i].symTab.symbol_list):
+                location_counter = str(hex(self.Token_list[i].symTab.location_list[index])).upper()
+                f.write(value +"\t"+ location_counter[2:] +"\n")
+            f.write("\n")
+            i += 1
+        f.close()
+
+    def print_literal_table(self, file_name):
+        f = open(file_name, 'w')
+        i = 0
+
+        while i <= self.section:
+            for index, value in enumerate(self.Token_list[i].literalTab.literal_list):
+                value = value.replace("=C","")
+                value = value.replace("=X","")
+                value = value.replace("'", "")
+                location_counter = str(hex(self.Token_list[i].literalTab.location_list[index])).upper()
+                f.write(value +"\t"+ location_counter[2:] +"\n")
+            i += 1
+        f.close()
 
 
 
