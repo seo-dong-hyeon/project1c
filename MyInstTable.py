@@ -12,6 +12,10 @@ class InstTable:
             self.inst_map[instruction.name] = instruction
         f.close()
 
+    def get_format(self, instruction_name):
+        instruction = self.inst_map[instruction_name]
+        return instruction.get_format(self.inst_map[instruction_name])
+
     def get_opcode(self, instruction_name):
         instruction = self.inst_map[instruction_name]
         return instruction.get_opcode(self.inst_map[instruction_name])
@@ -24,5 +28,9 @@ class Instruction:
         self.opcode = parsedLine[2]
         #print(self.name +" "+self.format+" "+self.opcode+" ")
 
+    def get_format(self):
+        return self.format
+
     def get_opcode(self):
-        return self.opcode;
+        return self.opcode
+

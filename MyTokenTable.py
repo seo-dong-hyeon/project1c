@@ -13,6 +13,14 @@ class TokenTable:
         self.token_list = []
         self.program_length = 0
 
+    def put_token(self, line, token_index):
+        token = Token
+        token.__init__(token, line)
+        self.token_list.insert(token_index, token)
+
+    def get_token(self, token_index):
+        return self.token_list[token_index]
+
 class Token:
     def __init__(self, line):
         self.nixbpe = 0X00
