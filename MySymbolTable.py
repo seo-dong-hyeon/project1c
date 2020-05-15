@@ -5,6 +5,6 @@ class SymbolTable:
         self.extdef_list = []
         self.extref_list = []
 
-    def put_symbol(self, symbol, location, index):
-        self.symbol_list.insert(index, symbol)
-        self.location_list.insert(index, location)
+    def put_symbol(self, symbol, location):
+        self.symbol_list.append(symbol)
+        self.location_list.append(symbol)

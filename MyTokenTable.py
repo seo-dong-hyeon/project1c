@@ -7,16 +7,16 @@ class TokenTable:
     pFlag = 2
     eFlag = 1
 
-    def __init__(self, symTab, instTab):
+    def __init__(self, symTab, instTab, literalTab):
         self.symTab = symTab
         self.instTab = instTab
+        self.literalTab = literalTab
         self.token_list = []
         self.program_length = 0
 
-    def put_token(self, line, token_index):
-        token = Token
-        token.__init__(token, line)
-        self.token_list.insert(token_index, token)
+    def put_token(self, line):
+        token = Token(line)
+        self.token_list.append(token)
 
     def get_token(self, token_index):
         return self.token_list[token_index]
@@ -29,10 +29,10 @@ class Token:
 
         self.label = ""
         self.operator = ""
-        self.operand.insert(0, "")
+        self.operand.append("")
         self.comment = ""
 
-        self.parsing(self, line)
+        self.parsing(line)
 
     def parsing(self, line):
         parsed_line = line.split("\t")
