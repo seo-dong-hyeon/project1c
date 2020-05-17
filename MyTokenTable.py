@@ -25,12 +25,11 @@ class TokenTable:
         object_code = ""
         token = self.get_token(token_index)
 
-        if(token.operator.find("+") != -1):
+        if token.operator.find("+") != -1:
             operator = token.operator.replace("+", "")
             opcode = self.instTab.get_opcode(operator)
             object_code += opcode[0]
-
-            if(token.operand[0].find(",") != -1):
+            if token.operand[0].find(",") != -1:
                 token.set_flag(TokenTable.nFlag, 1)
                 token.set_flag(TokenTable.iFlag, 1)
                 token.set_flag(TokenTable.xFlag, 1)
@@ -46,27 +45,24 @@ class TokenTable:
                 token.set_flag(TokenTable.eFlag, 1)
             object_code += self.make_object_code_second_and_third(token_index, opcode)
             object_code += "00000"
-        elif(self.instTab.get_format(token.operator) == "3/4"):
+        elif self.instTab.get_format(token.operator) == "3/4":
             opcode = self.instTab.get_opcode(token.operator)
             object_code += opcode[0]
-
-            if (token.operand[0] == ""):
+            if token.operand[0] == "":
                 token.set_flag(TokenTable.nFlag, 1)
                 token.set_flag(TokenTable.iFlag, 1)
                 token.set_flag(TokenTable.xFlag, 0)
                 token.set_flag(TokenTable.bFlag, 0)
                 token.set_flag(TokenTable.pFlag, 1)
                 token.set_flag(TokenTable.eFlag, 0)
-
                 object_code += self.make_object_code_second_and_third(token_index, opcode)
-            elif (token.operand[0].find("#") != -1):
+            elif token.operand[0].find("#") != -1:
                 token.set_flag(TokenTable.nFlag, 0)
                 token.set_flag(TokenTable.iFlag, 1)
                 token.set_flag(TokenTable.xFlag, 0)
                 token.set_flag(TokenTable.bFlag, 0)
                 token.set_flag(TokenTable.pFlag, 0)
                 token.set_flag(TokenTable.eFlag, 0)
-
                 object_code += self.make_object_code_second_and_third(token_index, opcode)
 
                 operand = token.operand[0].replace("#", "")
@@ -107,11 +103,10 @@ class TokenTable:
                 disp = target_address & 0xFFF
                 rest = str(hex(disp)).upper().replace("0X","")
 
-                if (len(rest) == 2):
+                if len(rest) == 2:
                     object_code += "0"
-                elif (len(rest) == 1):
+                elif len(rest) == 1:
                     object_code += "00"
-
                 object_code += rest
         else:
             opcode = self.instTab.get_opcode(token.operator)
@@ -141,45 +136,37 @@ class TokenTable:
 
         return object_code
 
-
-
-
-
     def make_object_code_second_and_third(self, index, opcode):
         object_code_second_and_third = ""
         ni = 0
-        if(self.get_token(index).get_flag(TokenTable.nFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.nFlag) != 0:
             ni += 2
-        if (self.get_token(index).get_flag(TokenTable.iFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.iFlag) != 0:
             ni += 1
 
-        if(opcode[1] >= '0' and opcode[1] <= '9'):
+        if opcode[1] >= '0' and opcode[1] <= '9':
             ni += int(opcode[1])
             object_code_second_and_third += str(hex(ni)).upper().replace("0X","")
         else:
             ni += int(opcode[1], 16)
             object_code_second_and_third += str(hex(ni)).upper().replace("0X","")
 
-        if(self.get_token(index).operand[0] == ""):
+        if self.get_token(index).operand[0] == "":
             object_code_second_and_third += "0000"
             return object_code_second_and_third
 
         xbpe = 0
-        if (self.get_token(index).get_flag(TokenTable.xFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.xFlag) != 0:
             xbpe += TokenTable.xFlag
-        if (self.get_token(index).get_flag(TokenTable.bFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.bFlag) != 0:
             xbpe += TokenTable.bFlag
-        if (self.get_token(index).get_flag(TokenTable.pFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.pFlag) != 0:
             xbpe += TokenTable.pFlag
-        if (self.get_token(index).get_flag(TokenTable.eFlag) != 0):
+        if self.get_token(index).get_flag(TokenTable.eFlag) != 0:
             xbpe += TokenTable.eFlag
         object_code_second_and_third += str(hex(xbpe)).upper().replace("0X","")
 
         return object_code_second_and_third
-
-
-
-
 
 class Token:
     def __init__(self, line):
@@ -197,7 +184,7 @@ class Token:
     def parsing(self, line):
         parsed_line = line.split("\t")
 
-        if(parsed_line[0] == '.'):
+        if parsed_line[0] == '.':
             return
 
         for index, value in enumerate(parsed_line):
@@ -212,7 +199,7 @@ class Token:
         return
 
     def set_flag(self, flag, value):
-        if(value == 1):
+        if value == 1:
             self.nixbpe = self.nixbpe | flag
 
     def get_flag(self, flags):

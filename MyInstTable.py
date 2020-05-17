@@ -25,9 +25,8 @@ class Instruction:
         self.opcode = ""
 
     def parsing(self, line):
-        parsedLine = line.split("-")
-        self.name += parsedLine[0]
-        self.format += parsedLine[1]
-        self.opcode += parsedLine[2]
-        #print(self.name +" "+self.format+" "+self.opcode+" ")
+        parsed_line = line.split("-")
+        self.name += parsed_line[0]
+        self.format += parsed_line[1]
+        self.opcode += parsed_line[2]
 

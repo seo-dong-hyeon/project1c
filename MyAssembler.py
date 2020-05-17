@@ -17,11 +17,7 @@ class Assembler:
 
         self.section = 0;
         self.token_index = 0;
-        self.symbol_index = 0;
         self.locctr = 0;
-
-        #for index, value in enumerate(self.inst_table.inst_map):
-            #print(index, self.inst_table.inst_map[value].name)
 
     def load_input_file(self, input_file):
         f = open(input_file, 'r')
@@ -37,115 +33,98 @@ class Assembler:
         while i < program_cnt:
             symbol_table = SymbolTable()
             self.symtab_list.append(symbol_table)
-
             literal_table = LiteralTable()
             self.literal_list.append(literal_table)
-
             token_table = TokenTable(self.symtab_list[i], self.inst_table, self.literal_list[i])
             self.Token_list.append(token_table)
-
             i += 1
 
         for index, value in enumerate(self.line_list):
             token = Token(value)
             token.operator = token.operator.rstrip("\n")
 
-            if(token.operator == ""):
+            if token.operator == "":
                 continue
-
-            if(token.operator == "START"):
+            if token.operator == "START":
                 self.locctr = 0
                 self.token_index = 0
-
                 self.Token_list[self.section].put_token(value)
-
-                #print(self.Token_list[section].get_token(self.Token_list[section], self.token_index).operator)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
-            elif(token.operator == "CSECT"):
+            elif token.operator == "CSECT":
                 self.locctr = 0
                 self.token_index = 0
                 self.section += 1
-
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
-            elif(token.operator == "RESW"):
+            elif token.operator == "RESW":
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
                 self.locctr += int(token.operand[0]) * 3
-            elif (token.operator == "RESB"):
+            elif token.operator == "RESB":
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
                 self.locctr += int(token.operand[0])
-            elif (token.operator == "WORD"):
+            elif token.operator == "WORD":
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
-
                 self.locctr += 3
-            elif (token.operator == "BYTE"):
+            elif token.operator == "BYTE":
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
 
-                if(token.operand[0][0] == "C"):
+                if token.operand[0][0] == "C":
                     self.locctr += len(token.operand[0]) - 3
-                elif(token.operand[0][0] == "X"):
+                elif token.operand[0][0] == "X":
                     self.locctr += int((len(token.operand[0]) - 3) / 2)
-            elif (token.operator == "EXTDEF"):
+            elif token.operator == "EXTDEF":
+                self.Token_list[self.section].symTab.put_extdef(token.operand[0])
+            elif token.operator == "EXTREF":
+                self.Token_list[self.section].symTab.put_extdef(token.operand[0])
+            elif token.operator == "END":
                 continue
-            elif (token.operator == "EXTREF"):
-                continue
-            elif (token.operator == "END"):
-                continue
-            elif (token.operator == "EQU"):
-                if(token.operand[0].find("*") == -1):
-                    self.locctr = 1000 #수정필요
+            elif token.operator == "EQU":
+                if token.operand[0].find("*") == -1:
+                    parsed_operand = token.operand[0].split("-")
+                    self.locctr = self.Token_list[self.section].symTab.search(parsed_operand[0]) - \
+                                  self.Token_list[self.section].symTab.search(parsed_operand[1])
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
-
-            elif (token.operator == "LTORG"):
+            elif token.operator == "LTORG":
                 self.make_literaltab()
                 self.token_index += 1
-                self.symbol_index += 1
             else:
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-                self.symbol_index += 1
 
-                if(token.operator[0] == "+"):
+                if token.operator[0] == "+":
                     self.locctr += 4
-                elif (self.inst_table.get_format(token.operator) == "3/4"):
+                elif self.inst_table.get_format(token.operator) == "3/4":
                     self.locctr += 3
                 else:
                     self.locctr += 2
 
-                if(token.operand[0].find('=') != -1):
+                if token.operand[0].find('=') != -1:
                     is_present = False
-                    for index, value in enumerate(self.Token_list[self.section].literalTab.tmp_list):
-                        if(value == token.operand[0]):
+                    for literal_index, literal in enumerate(self.Token_list[self.section].literalTab.tmp_list):
+                        if literal == token.operand[0]:
                             is_present = True
                             break
-                    if(is_present is not True):
+                    if is_present is not True:
                         self.Token_list[self.section].literalTab.tmp_list.append(token.operand[0])
 
-            if(self.locctr > self.Token_list[self.section].program_length):
+            if self.locctr > self.Token_list[self.section].program_length:
                 self.Token_list[self.section].program_length = self.locctr
 
         self.make_literaltab()
-        if (self.locctr > self.Token_list[self.section].program_length):
+        if self.locctr > self.Token_list[self.section].program_length:
             self.Token_list[self.section].program_length = self.locctr
 
         '''i = 0
@@ -158,7 +137,7 @@ class Assembler:
         self.Token_list[self.section].get_token(self.token_index).locctr = self.locctr
         token = self.Token_list[self.section].get_token(self.token_index)
 
-        if(token.label == ""):
+        if token.label == "":
             return
 
         self.Token_list[self.section].symTab.put_symbol(token.label, self.locctr)
@@ -169,12 +148,11 @@ class Assembler:
 
             self.Token_list[self.section].put_token(line)
             self.Token_list[self.section].get_token(self.token_index).locctr = self.locctr
-
             self.Token_list[self.section].literalTab.put_literal(value, self.locctr)
 
-            if (value[1] == 'C'):
+            if value[1] == 'C':
                 self.locctr += len(value) - 4
-            elif (value[1] == 'X'):
+            elif value[1] == 'X':
             	self.locctr += (len(value) - 4) / 2
 
         self.Token_list[self.section].literalTab.tmp_list.clear()
@@ -208,37 +186,36 @@ class Assembler:
     def pass2(self):
         for i, token_table in enumerate(self.Token_list):
             for j, token in enumerate(token_table.token_list):
-                #print(str(hex(token.locctr)) +" "+token.label +" "+token.operator +" "+ token.operand[0])
                 token.operator = token.operator.rstrip("\n")
-                if (token.operator == "START" or token.operator == "CSECT"):
+                if token.operator == "START" or token.operator == "CSECT":
                     self.code_list.append("")
                     continue
-                elif (token.operator == "RESW" or token.operator == "RESB"):
+                elif token.operator == "RESW" or token.operator == "RESB":
                     self.code_list.append("")
                     continue
                 elif (token.operator == "EXTDEF" or token.operator == "EXTREF" or token.operator == "END"
                       or token.operator == "EQU"):
                     self.code_list.append("")
                     continue
-                elif (token.operator == "WORD"):
+                elif token.operator == "WORD":
                     token.object_code += "000000"
                     self.code_list.append(token.object_code)
-                elif (token.operator == "BYTE"):
+                elif token.operator == "BYTE":
                     object_code = token.operand[0].replace("=C","")
                     object_code = object_code.replace("=X","")
                     object_code = object_code.replace("'","")
 
                     token.object_code += object_code
                     self.code_list.append(token.object_code)
-                elif (token.operator == "LTORG"):
+                elif token.operator == "LTORG":
                     literal = token.operand[0].replace("=", "")
                     literal = literal.replace("'", "")
 
-                    if (literal.find("C") != -1):
+                    if literal.find("C") != -1:
                         literal = literal.replace("C", "")
                         for k in range(len(literal)):
                             token.object_code += str(ord(literal[k])).upper()
-                    elif (literal.find("X") != -1):
+                    elif literal.find("X") != -1:
                         literal = literal.replace("X", "")
                         for k in range(len(literal)):
                             token.object_code += str(literal[k]).upper()

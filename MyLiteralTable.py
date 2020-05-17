@@ -12,13 +12,13 @@ class LiteralTable:
         address = -1
 
         literal = literal.rstrip("\n")
-        if (literal.find("#") != -1):
+        if literal.find("#") != -1:
             literal = literal.replace("#", "")
-        if (literal.find("@") != -1):
+        if literal.find("@") != -1:
             literal = literal.replace("@", "")
 
         for i, value in enumerate(self.literal_list):
-            if(value.find(literal) != -1):
+            if value.find(literal) != -1:
                 address = self.location_list[i]
                 break
 

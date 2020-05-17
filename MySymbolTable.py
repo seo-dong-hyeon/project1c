@@ -9,17 +9,23 @@ class SymbolTable:
         self.symbol_list.append(symbol)
         self.location_list.append(location)
 
+    def put_extdef(self, symbol):
+        self.extdef_list.append(symbol)
+
+    def put_extref(self, symbol):
+        self.extref_list.append(symbol)
+
     def search(self, symbol):
         address = -1
 
         symbol = symbol.rstrip("\n")
-        if (symbol.find("#") != -1):
+        if symbol.find("#") != -1:
             symbol = symbol.replace("#", "")
-        if (symbol.find("@") != -1):
+        if symbol.find("@") != -1:
             symbol = symbol.replace("@", "")
 
         for i, value in enumerate(self.symbol_list):
-            if(value.find(symbol) != -1):
+            if value.find(symbol) != -1:
                 address = self.location_list[i]
                 break
 
