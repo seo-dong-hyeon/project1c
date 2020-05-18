@@ -77,7 +77,6 @@ class Assembler:
                 self.Token_list[self.section].put_token(value)
                 self.make_symtab()
                 self.token_index += 1
-
                 if token.operand[0][0] == "C":
                     self.locctr += len(token.operand[0]) - 3
                 elif token.operand[0][0] == "X":
@@ -85,7 +84,7 @@ class Assembler:
             elif token.operator == "EXTDEF":
                 self.Token_list[self.section].symTab.put_extdef(token.operand[0])
             elif token.operator == "EXTREF":
-                self.Token_list[self.section].symTab.put_extdef(token.operand[0])
+                self.Token_list[self.section].symTab.put_extref(token.operand[0])
             elif token.operator == "END":
                 continue
             elif token.operator == "EQU":
@@ -188,14 +187,14 @@ class Assembler:
             for j, token in enumerate(token_table.token_list):
                 token.operator = token.operator.rstrip("\n")
                 if token.operator == "START" or token.operator == "CSECT":
-                    self.code_list.append("")
+                    #self.code_list.append("")
                     continue
                 elif token.operator == "RESW" or token.operator == "RESB":
-                    self.code_list.append("")
+                    #self.code_list.append("")
                     continue
                 elif (token.operator == "EXTDEF" or token.operator == "EXTREF" or token.operator == "END"
                       or token.operator == "EQU"):
-                    self.code_list.append("")
+                    #self.code_list.append("")
                     continue
                 elif token.operator == "WORD":
                     token.object_code += "000000"
@@ -214,7 +213,7 @@ class Assembler:
                     if literal.find("C") != -1:
                         literal = literal.replace("C", "")
                         for k in range(len(literal)):
-                            token.object_code += str(ord(literal[k])).upper()
+                            token.object_code += str(hex(ord(literal[k]))).upper().replace("0X", "")
                     elif literal.find("X") != -1:
                         literal = literal.replace("X", "")
                         for k in range(len(literal)):
@@ -226,6 +225,61 @@ class Assembler:
 
         for i, value in enumerate(self.code_list):
             print(value)
+
+    def print_object_code(self, file_name):
+        f = open(file_name, 'w')
+        buffer = ""
+        start_location = 0
+        ext_buffer_list = []
+        ext_address_list = []
+        word_buffer = ""
+        word_buffer_addr = 0
+
+        for i, token_table in enumerate(self.Token_list):
+            f.write(token_table.make_HDR_line())
+            for j, token in enumerate(token_table.token_list):
+                if token.operator == "LTORG":
+                    if token_table.program_length > token.locctr + len(token.object_code):
+                        buffer = token_table.make_T_line(buffer, start_location)
+                        f.write(buffer)
+                        buffer = ""
+                elif token.operator == "WORD":
+                    word_buffer += token.operand[0]
+                    word_buffer_addr = token.locctr
+                elif token.operator.find("+") != -1:
+                    ext_buffer_list.append(token.operand[0])
+                    ext_address_list.append(token.locctr + 1)
+
+                if buffer == "":
+                    start_location = token.locctr
+
+                if (len(buffer) + len(token.object_code)) / 2 > 0X1D:
+                    buffer = token_table.make_T_line(buffer, start_location)
+                    f.write(buffer)
+                    buffer = ""
+                    start_location = token.locctr
+                buffer += token.object_code
+
+            buffer = token_table.make_T_line(buffer, start_location)
+            f.write(buffer)
+            buffer = ""
+
+            buffer = token_table.make_M_line(ext_buffer_list, ext_address_list, word_buffer, word_buffer_addr)
+            f.write(buffer)
+            buffer = ""
+
+            buffer = "E"
+            if i == 0:
+                buffer += "000000"
+            buffer += "\n\n"
+            f.write(buffer)
+            buffer = ""
+
+            ext_buffer_list.clear()
+            ext_address_list.clear()
+            word_buffer = ""
+            word_buffer_addr = 0
+        f.close()
 
 
 

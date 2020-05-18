@@ -164,9 +164,86 @@ class TokenTable:
             xbpe += TokenTable.pFlag
         if self.get_token(index).get_flag(TokenTable.eFlag) != 0:
             xbpe += TokenTable.eFlag
-        object_code_second_and_third += str(hex(xbpe)).upper().replace("0X","")
+        object_code_second_and_third += str(hex(xbpe)).upper().replace("0X", "")
 
         return object_code_second_and_third
+
+    def make_HDR_line(self):
+        H_line = "H"+self.get_token(0).label+"\t000000"
+        #print("length " +str(self.program_length))
+        program_length_to_str = str(hex(int(self.program_length))).upper().replace("0X", "")
+        for i in range(6 - len(program_length_to_str)):
+            H_line += "0"
+        H_line += (program_length_to_str + "\n")
+
+        D_line = ""
+        if len(self.symTab.extdef_list) != 0:
+            D_line += "D"
+            for i, ext_value in enumerate(self.symTab.extdef_list):
+                extdef = ext_value.split(",")
+                for j in range(len(extdef)):
+                    location = str(hex(self.symTab.search(extdef[j]))).upper().replace("0X", "")
+                    D_line += extdef[j].rstrip("\n")
+                    for k in range(6 - len(location)):
+                        D_line += "0"
+                    D_line += location
+            D_line += "\n"
+
+        R_line = "R"
+        for i, ext_value in enumerate(self.symTab.extref_list):
+            extref = ext_value.split(",")
+            for j in range(len(extref)):
+                R_line += extref[j]
+        #R_line += "\n"
+
+        return H_line + D_line + R_line
+
+    def make_T_line(self, buffer, location):
+        T_line = "T"
+        address = str(hex(location)).upper().replace("0X", "")
+        cnt_of_char = str(hex(int(len(buffer)/2))).upper().replace("0X", "")
+
+        for i in range(6 - len(address)):
+            T_line += "0"
+        T_line += address
+
+        for i in range(2 - len(cnt_of_char)):
+            T_line += "0"
+        T_line += cnt_of_char
+
+        return T_line + buffer +"\n"
+
+    def make_M_line(self, ext_buffer_list, ext_address_list, word_buffer, word_address):
+        M_line = ""
+        for i , value in enumerate(ext_buffer_list):
+            value = value.rstrip("\n")
+            M_line += "M"
+            ext_address = str(hex(ext_address_list[i])).upper().replace("0X", "")
+            for j in range(6 - len(ext_address)):
+                M_line += "0"
+            M_line += ext_address + "05+"
+            if value.find(",") != -1:
+                only_buffer = value.split(",")
+                M_line += only_buffer[0] + "\n"
+            else:
+                M_line += value + "\n"
+
+        if len(word_buffer) != 0:
+            word_buffers = word_buffer.split("-")
+            word_address_to_str = str(hex(word_address)).upper().replace("0X", "")
+            for i in range(len(word_buffers)):
+                M_line += "M"
+                for j in range(6 - len(word_address_to_str)):
+                    M_line += "0"
+                M_line += word_address_to_str
+                if i == 0:
+                    M_line += "06+" + word_buffers[i] + "\n"
+                else:
+                    M_line += "06-" + word_buffers[i]
+
+        return M_line
+
+
 
 class Token:
     def __init__(self, line):
