@@ -2,6 +2,7 @@ class InstTable:
     def __init__(self, filename):
         self.file_name = filename
         self.inst_map = {}
+        self.open_file()
 
     def open_file(self):
         f = open(self.file_name, 'r')
