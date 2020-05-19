@@ -148,46 +148,69 @@ class Assembler:
         if self.locctr > self.Token_list[self.section].program_length:
             self.Token_list[self.section].program_length = self.locctr
 
+    '''추가한 함수'''
+    '''symbol table을 생성하는 함수'''
+    '''반복적 작업의 코드를 줄이고자 모듈화'''
     def make_symtab(self):
         self.Token_list[self.section].get_token(self.token_index).locctr = self.locctr
         token = self.Token_list[self.section].get_token(self.token_index)
 
-        if token.label == "":
+        if token.label == "": #label이 없다면 넘어감
             return
 
+        #label과 location counter를 매칭하여 저장
         self.Token_list[self.section].symTab.put_symbol(token.label, self.locctr)
 
+    '''추가한 함수'''
+    '''literal table을 생성하는 함수'''
+    '''반복적 작업의 코드를 줄이고자 모듈화'''
     def make_literaltab(self):
         for index, value in enumerate(self.Token_list[self.section].literalTab.tmp_list):
             line = "\tLTORG\t"+ value
 
+            '''임시로 literal들을 저장해두었던 list 멤버들을 literal table에 옮김'''
+            '''operand의 타입에 따라 다르게 다음 location counter값을 계산'''
+            '''operator를 LTORG로 operand를 literal list의 첫번쨰 원소로 구성하여 토큰에 저장'''
             self.Token_list[self.section].put_token(line)
             self.Token_list[self.section].get_token(self.token_index).locctr = self.locctr
             self.Token_list[self.section].literalTab.put_literal(value, self.locctr)
 
-            if value[1] == 'C':
+            '''임시로 literal들을 저장해두었던 list 멤버들을 실제 literal table에 옮기는 작업'''
+            if value[1] == 'C': # C타입이면 '=','C','''문자를 제외한 문자열 길이만큼을 locctr에 더함
                 self.locctr += len(value) - 4
-            elif value[1] == 'X':
+            elif value[1] == 'X': # X타입이면 '=','X','''문자를 제외한 문자열 길이의 절반만큼을 locctr에 더함
             	self.locctr += (len(value) - 4) / 2
 
+        #임시로 literal들을 저장해두었던 list 멤버들을 literal table에 옮겼으므로 초기화
         self.Token_list[self.section].literalTab.tmp_list.clear()
 
+    '''작성된 SymbolTable들을 출력형태에 맞게 출력'''
     def print_symbol_table(self, file_name):
         f = open(file_name, 'w')
         i = 0
+
+        '''TokenList의 size = 프로그램의 개수만큼 진행'''
         while i <= self.section:
+            '''TokenList의 각각의 프로그램의 symbol list 길이만큼 진행'''
             for index, value in enumerate(self.Token_list[i].symTab.symbol_list):
+                '''symbol list의 원소인 symbol과 location counter 값을 묶어서 문자열로 만듦'''
                 location_counter = str(hex(self.Token_list[i].symTab.location_list[index])).upper()
                 f.write(value +"\t"+ location_counter[2:] +"\n")
-            f.write("\n")
+            f.write("\n") #각각의 프로그램이 끝날때마다 개행
             i += 1
         f.close()
 
+    '''작성된 LiteralTable들을 출력형태에 맞게 출력'''
     def print_literal_table(self, file_name):
         f = open(file_name, 'w')
         i = 0
+
+        '''TokenList의 size = 프로그램의 개수만큼 진행'''
         while i <= self.section:
+            '''TokenList의 각각의 프로그램의 literal list 길이만큼 진행'''
             for index, value in enumerate(self.Token_list[i].literalTab.literal_list):
+                '''literal list의 원소인 literal과 location counter을 묶어서 문자열로 만듦'''
+                '''literal 파일에 저장전 '=','C','X',' 등의 문자는 제외함'''
                 value = value.replace("=C","")
                 value = value.replace("=X","")
                 value = value.replace("'", "")
@@ -196,74 +219,96 @@ class Assembler:
             i += 1
         f.close()
 
+    '''분석된 내용을 바탕으로 object code를 생성하여 codeList에 저장'''
     def pass2(self):
+        '''TokenList의 size = 프로그램의 개수만큼 진행'''
         for i, token_table in enumerate(self.Token_list):
+            '''TokenList의 각각의 프로그램의 token list의 길이만큼 진행'''
             for j, token in enumerate(token_table.token_list):
                 token.operator = token.operator.rstrip("\n")
+                '''operator가 특정 지시어일땐 object code를 생성하지 않고 넘어감'''
                 if token.operator == "START" or token.operator == "CSECT":
-                    #self.code_list.append("")
                     continue
                 elif token.operator == "RESW" or token.operator == "RESB":
-                    #self.code_list.append("")
                     continue
                 elif (token.operator == "EXTDEF" or token.operator == "EXTREF" or token.operator == "END"
                       or token.operator == "EQU"):
-                    #self.code_list.append("")
                     continue
-                elif token.operator == "WORD":
-                    token.object_code += "000000"
+                elif token.operator == "WORD": #operator가 WORD면
+                    token.object_code += "000000" #주소를 알 수 없으므로 6자리 object code를 모두 0으로
                     self.code_list.append(token.object_code)
-                elif token.operator == "BYTE":
+                elif token.operator == "BYTE": #operator가 BYTE면
+                    '''operand에서 'X','C','문자를 제외하여 object code에 그대로 저장'''
                     object_code = token.operand[0].replace("=C","")
                     object_code = object_code.replace("=X","")
                     object_code = object_code.replace("'","")
-
                     token.object_code += object_code
                     self.code_list.append(token.object_code)
-                elif token.operator == "LTORG":
+                elif token.operator == "LTORG": #operator가 LTOGR면
+                    '''operand를 literal 변수에 저장 후 '=', '문자를 지움'''
                     literal = token.operand[0].replace("=", "")
                     literal = literal.replace("'", "")
 
+                    '''literal이 C타입이면'''
                     if literal.find("C") != -1:
+                        ''''C'문자를 지우고 literal의 각 문자를 16진수로 변환후 objectCode에 그대로 저장'''
                         literal = literal.replace("C", "")
                         for k in range(len(literal)):
                             token.object_code += str(hex(ord(literal[k]))).upper().replace("0X", "")
-                    elif literal.find("X") != -1:
+                    elif literal.find("X") != -1: #literal이 X타입이면
                         literal = literal.replace("X", "")
+                        '''literal의 각 문자를 objectCode에 그대로 저장'''
                         for k in range(len(literal)):
                             token.object_code += str(literal[k]).upper()
                     self.code_list.append(token.object_code)
-                else:
-                    token.object_code += token_table.make_object_code(j)
+                else: #그 외 operator
+                    token.object_code += token_table.make_object_code(j) #TokenTable에 정의된 메소드로 objectCode를 작성
                     self.code_list.append(token.object_code)
+        '''for i, value in enumerate(self.code_list):
+            print(value)'''
+        i = 0
+        while i <= self.section:
+            for index, value in enumerate(self.Token_list[i].token_list):
+                print(value.label + "\t" + value.operator + "\t" + value.operand[0].rstrip("\n")
+                      + "\t" + value.comment.rstrip("\n")
+                      + "\t\t\t" +value.object_code)
+            i += 1
 
-        for i, value in enumerate(self.code_list):
-            print(value)
-
+    '''작성된 codeList를 출력형태에 맞게 출력'''
     def print_object_code(self, file_name):
         f = open(file_name, 'w')
-        buffer = ""
-        start_location = 0
-        ext_buffer_list = []
-        ext_address_list = []
-        word_buffer = ""
-        word_buffer_addr = 0
+        buffer = "" #라인마다의 내용을 저장할 버퍼
+        start_location = 0 #T라인이 시작할 때의 변수 주소를 저장
+        ext_buffer_list = [] #ext변수를 저장할 공간
+        ext_address_list = [] #ext변수의 주소를 저장
+        word_buffer = "" #WORD 명령어에서 처리할 EQU 변수
+        word_buffer_addr = 0 #EQU 변수의 주소를 저장
 
+        '''각각의 프로그램을 의미하는 TokenList의 크기만큼 읽으며'''
+        '''각각의 프로그램의 모든 object code를 읽어 버퍼에 누적하여 저장하면서 진행'''
+        '''H,D,R,T,M라인의 형식에 맞는 문장을 만들기 위해 3개의 함수를 별도로 TokenTalbe 클래스에 정의'''
+        '''버퍼에 내용을 저장하다 상황에 따라 버퍼를 매개변수로 알맞은 함수를 호출'''
+        '''버퍼의 내용을 가공하여 H,D,R 또는 T 또는 M 라인의 형식에 맞는 형태로 바꾼 뒤 리턴'''
+        '''리턴받은 문자열을 파일 입출력을 통해 저장한다'''
         for i, token_table in enumerate(self.Token_list):
-            f.write(token_table.make_HDR_line())
+            '''H, D, R라인 작성 '''
+            f.write(token_table.make_HDR_line()) #새로운 TokenList을 가져오는 것은 새로운 프로그램을 가져오는 것을 의미
+            '''T라인 작성'''
             for j, token in enumerate(token_table.token_list):
-                if token.operator == "LTORG":
+                if token.operator == "LTORG": #operator가 프로그램 중간에 나온 LTORG면 저장했던 내용을 T라인에 적음
                     if token_table.program_length > token.locctr + len(token.object_code):
                         buffer = token_table.make_T_line(buffer, start_location)
                         f.write(buffer)
                         buffer = ""
-                elif token.operator == "WORD":
+                elif token.operator == "WORD": #operator가 WORD면 word의 operand와 현재 주소를 저장
                     word_buffer += token.operand[0]
                     word_buffer_addr = token.locctr
-                elif token.operator.find("+") != -1:
+                elif token.operator.find("+") != -1: #operator가 4형식이면 ext 변수리스트에 저장
                     ext_buffer_list.append(token.operand[0])
                     ext_address_list.append(token.locctr + 1)
 
+                '''버퍼에 아무것도 없다는 것은 프로그램 시작이거나 기존 버퍼를 T라인에 적은 것이므로'''
+                '''새로운 T라인을 위해 현재 주소를 저장해 둠'''
                 if buffer == "":
                     start_location = token.locctr
 
