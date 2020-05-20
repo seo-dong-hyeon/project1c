@@ -239,8 +239,8 @@ class Assembler:
                     self.code_list.append(token.object_code)
                 elif token.operator == "BYTE": #operator가 BYTE면
                     '''operand에서 'X','C','문자를 제외하여 object code에 그대로 저장'''
-                    object_code = token.operand[0].replace("=C","")
-                    object_code = object_code.replace("=X","")
+                    object_code = token.operand[0].replace("C","")
+                    object_code = object_code.replace("X","")
                     object_code = object_code.replace("'","")
                     token.object_code += object_code
                     self.code_list.append(token.object_code)
@@ -266,13 +266,6 @@ class Assembler:
                     self.code_list.append(token.object_code)
         '''for i, value in enumerate(self.code_list):
             print(value)'''
-        i = 0
-        while i <= self.section:
-            for index, value in enumerate(self.Token_list[i].token_list):
-                print(value.label + "\t" + value.operator + "\t" + value.operand[0].rstrip("\n")
-                      + "\t" + value.comment.rstrip("\n")
-                      + "\t\t\t" +value.object_code)
-            i += 1
 
     '''작성된 codeList를 출력형태에 맞게 출력'''
     def print_object_code(self, file_name):
